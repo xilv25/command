@@ -1,0 +1,92 @@
+{
+  "commands": {
+    "cmd_mifja2od_91aj": {
+      "guildId": "1380909989073391666",
+      "name": "tes",
+      "title": "tes",
+      "description": "nsnsnsnsnsnsnn",
+      "channelId": "1442301811389235366",
+      "ratings": {
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 0
+      },
+      "createdBy": "968258393766768680",
+      "messageId": "1443103423355682948"
+    },
+    "cmd_mifjwvj5_azb7": {
+      "guildId": "1380909989073391666",
+      "name": "tes",
+      "title": "TES",
+      "description": "MASIH TES YA KING",
+      "channelId": "1442301811389235366",
+      "ratings": {
+        "1": 1,
+        "2": 0,
+        "3": 1,
+        "4": 1,
+        "5": 6
+      },
+      "createdBy": "968258393766768680",
+      "messageId": "1443107885713461330"
+    },
+    "cmd_mifkmjxl_bhtn": {
+      "guildId": "1380909989073391666",
+      "name": "tes",
+      "title": "TES",
+      "description": "**ROD : ELEMENT**\n**MAP : ALL**\n**PING : 30 - 200**\n**SKIN : NO SKIN**\n\n```All maps (stable)✅\nCompleted Delay : 1.4\nReset Timer : 1.7```",
+      "channelId": "1442301811389235366",
+      "ratings": {
+        "1": 1,
+        "2": 0,
+        "3": 3,
+        "4": 2,
+        "5": 47
+      },
+      "createdBy": "968258393766768680",
+      "messageId": "1443112910602637332"
+    },
+    "cmd_mifnicvc_2ikz": {
+      "guildId": "1380909989073391666",
+      "name": "tes doang",
+      "title": "jsnsbs",
+      "description": "NI GW EDIT",
+      "channelId": "1442301811389235366",
+      "ratings": {
+        "1": 1,
+        "2": 0,
+        "3": 1,
+        "4": 0,
+        "5": 13
+      },
+      "createdBy": "968258393766768680",
+      "messageId": "1443140086630842481"
+    },
+    "cmd_mifo5cvd_8haf": {
+      "guildId": "1380909989073391666",
+      "name": "tes kedua",
+      "title": "NYOBA WORK GK",
+      "description": "MASIH TES KING SABAR",
+      "channelId": "1442301811389235366",
+      "ratings": {
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0,
+        "5": 2
+      },
+      "createdBy": "968258393766768680",
+      "messageId": "1443137724986036364"
+    }
+  },
+  "settings": {
+    "1380909989073391666": {
+      "reviewChannelId": "1442282236530393319",
+      "reportChannelId": "1442283177526689954",
+      "statsChannelId": "1442275931417870476",
+      "statsMessageId": "1443133337521881118"
+    }
+  }
+}
