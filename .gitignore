@@ -1,0 +1,7 @@
+node_modules/
+.env
+commands.json
+command_bot.log
+commend_bot.log
+index copy.js.backup_20251125
+

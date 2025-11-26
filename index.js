@@ -1,4 +1,4 @@
-// index.js — BOT RATING & SAVE JPG
+// index.js — BOT RATING & SAVE JPG + LOGGING
 require("dotenv").config();
 const fs = require("fs");
 const path = require("path");
@@ -36,6 +36,48 @@ const FOOTER_IMAGE_URL =
 
 const DB_FILE = path.join(__dirname, "commands.json");
 
+// --- LOGGING (command_bot.log) ---
+
+const LOG_FILE = path.join(__dirname, "command_bot.log");
+
+function writeLog(level, msg) {
+  const line = `[${new Date().toISOString()}] [${level}] ${msg}\n`;
+  fs.appendFile(LOG_FILE, line, (err) => {
+    if (err) {
+      console.error("Gagal tulis log:", err);
+    }
+  });
+}
+
+function logInfo(msg) {
+  console.log(msg);
+  writeLog("INFO", msg);
+}
+
+function logError(msg) {
+  console.error(msg);
+  writeLog("ERROR", msg);
+}
+
+function monitorLog(msg) {
+  writeLog("MONITOR", msg);
+}
+
+// Tangkap error global
+process.on("unhandledRejection", (reason) => {
+  logError(
+    `UnhandledRejection: ${
+      reason && reason.stack ? reason.stack : String(reason)
+    }`
+  );
+});
+
+process.on("uncaughtException", (err) => {
+  logError(
+    `UncaughtException: ${err && err.stack ? err.stack : String(err)}`
+  );
+});
+
 // --- SIMPLE JSON DB ---
 
 let db = {
@@ -58,11 +100,15 @@ function loadDb() {
       const raw = fs.readFileSync(DB_FILE, "utf8");
       db = JSON.parse(raw);
       ensureDbShape();
+      logInfo("Database commands.json loaded");
     } else {
       ensureDbShape();
+      logInfo("Database commands.json not found, starting with empty DB");
     }
   } catch (err) {
-    console.error("Gagal load DB:", err);
+    logError(
+      `Gagal load DB: ${err && err.stack ? err.stack : String(err)}`
+    );
     ensureDbShape();
   }
 }
@@ -71,7 +117,9 @@ function saveDb() {
   try {
     fs.writeFileSync(DB_FILE, JSON.stringify(db, null, 2), "utf8");
   } catch (err) {
-    console.error("Gagal save DB:", err);
+    logError(
+      `Gagal save DB: ${err && err.stack ? err.stack : String(err)}`
+    );
   }
 }
 
@@ -224,7 +272,10 @@ async function renderCommandToImage({ username, title, description }) {
 
 const app = express();
 app.get("/", (_, res) => res.send("Bot Alive ✅"));
-app.listen(3000, () => console.log("Keep-alive server running"));
+app.listen(3000, () => {
+  logInfo("Keep-alive server running on port 3000");
+  monitorLog("Keep-alive HTTP server started");
+});
 
 const client = new Client({
   intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
@@ -298,9 +349,16 @@ async function updateStatsEmbed(guildId) {
       settings.statsMessageId = m.id;
       db.settings[guildId] = settings;
       saveDb();
+      logInfo(
+        `Stats embed created for guild=${guildId} messageId=${m.id}`
+      );
     }
   } catch (err) {
-    console.error("updateStatsEmbed error:", err);
+    logError(
+      `updateStatsEmbed error: ${
+        err && err.stack ? err.stack : String(err)
+      }`
+    );
   }
 }
 
@@ -319,7 +377,9 @@ async function registerSlashCommands() {
         .addStringOption((o) =>
           o
             .setName("name")
-            .setDescription("ID internal (misal: eletrident) — tidak ditampilkan")
+            .setDescription(
+              "ID internal (misal: eletrident) — tidak ditampilkan"
+            )
             .setRequired(true)
         )
         .addStringOption((o) =>
@@ -331,7 +391,9 @@ async function registerSlashCommands() {
         .addStringOption((o) =>
           o
             .setName("description")
-            .setDescription("Isi informasi yang mau ditampilkan di embed")
+            .setDescription(
+              "Isi informasi yang mau ditampilkan di embed"
+            )
             .setRequired(true)
         )
         .addChannelOption((o) =>
@@ -373,9 +435,7 @@ async function registerSlashCommands() {
     .setName("command")
     .setDescription("Kelola command (admin only)")
     .addSubcommand((sub) =>
-      sub
-        .setName("list")
-        .setDescription("Lihat list command yang terdaftar")
+      sub.setName("list").setDescription("Lihat list command yang terdaftar")
     )
     .addSubcommand((sub) =>
       sub
@@ -427,15 +487,21 @@ async function registerSlashCommands() {
         Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
         { body: commands.map((c) => c.toJSON()) }
       );
-      console.log("Slash commands registered (guild)");
+      logInfo("Slash commands registered (guild)");
+      monitorLog(`Slash commands registered for guild ${GUILD_ID}`);
     } else {
       await rest.put(Routes.applicationCommands(CLIENT_ID), {
         body: commands.map((c) => c.toJSON()),
       });
-      console.log("Slash commands registered (global)");
+      logInfo("Slash commands registered (global)");
+      monitorLog("Slash commands registered (global)");
     }
   } catch (err) {
-    console.error("Error register slash:", err);
+    logError(
+      `Error register slash: ${
+        err && err.stack ? err.stack : String(err)
+      }`
+    );
   }
 }
 
@@ -516,15 +582,24 @@ async function sendOrRefreshCommandEmbed(cmdId) {
     cmdData.messageId = msg.id;
     db.commands[cmdId] = cmdData;
     saveDb();
+
+    logInfo(
+      `Command embed sent/refreshed cmdId=${cmdId} name=${cmdData.name} channel=${cmdData.channelId}`
+    );
   } catch (err) {
-    console.error("sendOrRefreshCommandEmbed error:", err);
+    logError(
+      `sendOrRefreshCommandEmbed error: ${
+        err && err.stack ? err.stack : String(err)
+      }`
+    );
   }
 }
 
 // --- READY ---
 
 client.once("ready", async () => {
-  console.log(`Logged in as ${client.user.tag}`);
+  logInfo(`Logged in as ${client.user.tag}`);
+  monitorLog(`Bot ready: ${client.user.tag}`);
   loadDb();
   await registerSlashCommands();
 });
@@ -579,6 +654,13 @@ client.on("interactionCreate", async (interaction) => {
 
           await sendOrRefreshCommandEmbed(cmdId);
 
+          logInfo(
+            `[SETUP COMMAND] guild=${interaction.guildId} user=${interaction.user.id} name=${name} title="${title}" channel=${channel.id}`
+          );
+          monitorLog(
+            `Setup command created in guild ${interaction.guildId} by ${interaction.user.tag} (${name})`
+          );
+
           await interaction.reply({
             embeds: [
               aestheticEmbed({
@@ -603,6 +685,15 @@ client.on("interactionCreate", async (interaction) => {
             statsMessageId: null,
           };
           saveDb();
+
+          logInfo(
+            `[SETUP CHANNEL] guild=${interaction.guildId} review=${review.id} report=${report.id} stats=${
+              stats ? stats.id : "none"
+            }`
+          );
+          monitorLog(
+            `Setup channels updated in guild ${interaction.guildId} by ${interaction.user.tag}`
+          );
 
           await interaction.reply({
             embeds: [
@@ -656,6 +747,10 @@ client.on("interactionCreate", async (interaction) => {
             return `${idx + 1}. **${v.title}**\n   ID: \`${v.name}\`\n   Channel: <#${v.channelId}>`;
           });
 
+          logInfo(
+            `[COMMAND LIST] guild=${interaction.guildId} user=${interaction.user.id} count=${entries.length}`
+          );
+
           await interaction.reply({
             embeds: [
               aestheticEmbed({
@@ -676,7 +771,8 @@ client.on("interactionCreate", async (interaction) => {
 
           const entry = Object.entries(db.commands).find(
             ([, v]) =>
-              v.guildId === interaction.guildId && v.name.toLowerCase() === name
+              v.guildId === interaction.guildId &&
+              v.name.toLowerCase() === name
           );
           if (!entry) {
             return interaction.reply({
@@ -708,7 +804,11 @@ client.on("interactionCreate", async (interaction) => {
               }
             }
           } catch (err) {
-            console.error("Error deleting command message:", err);
+            logError(
+              `Error deleting command message: ${
+                err && err.stack ? err.stack : String(err)
+              }`
+            );
           }
 
           delete db.commands[cmdId];
@@ -716,6 +816,13 @@ client.on("interactionCreate", async (interaction) => {
 
           // update statistik sesudah remove
           updateStatsEmbed(interaction.guildId).catch(() => {});
+
+          logInfo(
+            `[COMMAND REMOVE] guild=${interaction.guildId} user=${interaction.user.id} name=${name}`
+          );
+          monitorLog(
+            `Command removed in guild ${interaction.guildId}: ${name} by ${interaction.user.tag}`
+          );
 
           await interaction.reply({
             embeds: [
@@ -736,11 +843,15 @@ client.on("interactionCreate", async (interaction) => {
             .trim();
           const newTitle = interaction.options.getString("title", false);
           const newDesc = interaction.options.getString("description", false);
-          const newChannel = interaction.options.getChannel("channel", false);
+          const newChannel = interaction.options.getChannel(
+            "channel",
+            false
+          );
 
           const entry = Object.entries(db.commands).find(
             ([, v]) =>
-              v.guildId === interaction.guildId && v.name.toLowerCase() === name
+              v.guildId === interaction.guildId &&
+              v.name.toLowerCase() === name
           );
           if (!entry) {
             return interaction.reply({
@@ -764,6 +875,13 @@ client.on("interactionCreate", async (interaction) => {
           saveDb();
 
           await sendOrRefreshCommandEmbed(cmdId);
+
+          logInfo(
+            `[COMMAND EDIT] guild=${interaction.guildId} user=${interaction.user.id} name=${name}`
+          );
+          monitorLog(
+            `Command edited in guild ${interaction.guildId}: ${name} by ${interaction.user.tag}`
+          );
 
           await interaction.reply({
             embeds: [
@@ -795,6 +913,13 @@ client.on("interactionCreate", async (interaction) => {
           });
         }
 
+        logInfo(
+          `[SAVE JPG] guild=${interaction.guildId} user=${interaction.user.id} cmd=${cmdId} name=${cmdData.name}`
+        );
+        monitorLog(
+          `User ${interaction.user.tag} requested JPG for cmdId=${cmdId} in guild=${interaction.guildId}`
+        );
+
         try {
           const buffer = await renderCommandToImage({
             username: interaction.user.username,
@@ -803,13 +928,21 @@ client.on("interactionCreate", async (interaction) => {
           });
 
           await interaction.reply({
-            content:
-              "Berikut JPG untuk informasi ini. Silakan di-save.",
-            files: [{ attachment: buffer, name: `limehub-${cmdData.name}.jpg` }],
+            content: "Berikut JPG untuk informasi ini. Silakan di-save.",
+            files: [
+              {
+                attachment: buffer,
+                name: `limehub-${cmdData.name}.jpg`,
+              },
+            ],
             ephemeral: true,
           });
         } catch (err) {
-          console.error("renderCommandToImage error:", err);
+          logError(
+            `renderCommandToImage error: ${
+              err && err.stack ? err.stack : String(err)
+            }`
+          );
           await interaction.reply({
             content: "Gagal membuat JPG. Coba lagi nanti.",
             ephemeral: true,
@@ -874,15 +1007,25 @@ client.on("interactionCreate", async (interaction) => {
         });
       }
 
-      const notesRaw = interaction.fields.getTextInputValue("notes") || "";
+      const notesRaw =
+        interaction.fields.getTextInputValue("notes") || "";
       const notes = notesRaw.trim() || "Tidak ada catatan.";
       const guildId = cmdData.guildId;
       const settings = db.settings[guildId] || {};
 
+      logInfo(
+        `[RATING] guild=${guildId} user=${interaction.user.id} rating=${rating} cmd=${cmdId} name=${cmdData.name}`
+      );
+      monitorLog(
+        `Rating ${rating}⭐ untuk cmd=${cmdData.name} oleh ${interaction.user.tag} di guild=${guildId}`
+      );
+
       // Kirim embed ke channel review
       if (settings.reviewChannelId) {
         try {
-          const guild = await client.guilds.fetch(guildId).catch(() => null);
+          const guild = await client.guilds
+            .fetch(guildId)
+            .catch(() => null);
           if (guild) {
             const rCh = await guild.channels
               .fetch(settings.reviewChannelId)
@@ -914,7 +1057,11 @@ client.on("interactionCreate", async (interaction) => {
             }
           }
         } catch (err) {
-          console.error("send review embed error:", err);
+          logError(
+            `send review embed error: ${
+              err && err.stack ? err.stack : String(err)
+            }`
+          );
         }
       }
 
@@ -955,9 +1102,15 @@ client.on("interactionCreate", async (interaction) => {
 
         try {
           const dm = await interaction.user.createDM();
-          await dm.send({ embeds: [dmEmbed], components: comps }).catch(() => {});
+          await dm
+            .send({ embeds: [dmEmbed], components: comps })
+            .catch(() => {});
         } catch (err) {
-          console.error("DM rating rendah error:", err);
+          logError(
+            `DM rating rendah error: ${
+              err && err.stack ? err.stack : String(err)
+            }`
+          );
         }
       }
 
@@ -975,7 +1128,11 @@ client.on("interactionCreate", async (interaction) => {
       return;
     }
   } catch (err) {
-    console.error("interactionCreate error:", err);
+    logError(
+      `interactionCreate error: ${
+        err && err.stack ? err.stack : String(err)
+      }`
+    );
     if (interaction.isRepliable && !interaction.replied) {
       try {
         await interaction.reply({
@@ -995,6 +1152,8 @@ client.on("messageCreate", (message) => {
 // --- LOGIN ---
 
 client.login(TOKEN).catch((err) => {
-  console.error("Login failed:", err);
+  logError(
+    `Login failed: ${err && err.stack ? err.stack : String(err)}`
+  );
   process.exit(1);
 });
